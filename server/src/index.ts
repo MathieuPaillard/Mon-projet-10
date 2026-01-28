@@ -21,11 +21,11 @@ app.post("/api/register", (req, res) => {
 app.use(express.static(path.join(__dirname, "../public")));
 
 // Fallback SPA
-app.get(/.*/, (_req, res) => {
+app.get("/index", (_req, res) => {
   res.sendFile(path.join(__dirname, "../public", "index.html"));
 });
 
-
+app.get("/api/ping", (_req, res) => res.json({ ok: true , message : "Aucun bug à signaler !"}));
 
 app.listen(PORT, () => {
   console.log(`Serveur: http://localhost:${PORT}`);

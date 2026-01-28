@@ -1,5 +1,12 @@
+import './style.css';
 const form = document.querySelector<HTMLFormElement>("#registerForm");
 const out = document.querySelector<HTMLPreElement>("#out");
+console.log("main.ts chargé");
+
+fetch("/api/ping")
+  .then((r) => r.json())
+  .then((data) => console.log("ping =", data))
+  .catch((e) => console.error("ping failed", e));
 
 if (!form) throw new Error("Form introuvable");
 
@@ -13,7 +20,7 @@ form.addEventListener("submit", async (e) => {
     email: String(data.get("email") ?? ""),
     password: String(data.get("password") ?? ""),
   };
-
+  
   const res = await fetch("/api/register", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
