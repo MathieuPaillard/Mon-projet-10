@@ -19,9 +19,14 @@ app.post("/api/register", (req, res) => {
 });
 // Statique (front buildé par Vite)
 app.use(express_1.default.static(node_path_1.default.join(__dirname, "../public")));
-// Fallback SPA
 app.get("/index", (_req, res) => {
     res.sendFile(node_path_1.default.join(__dirname, "../public", "index.html"));
+});
+app.get("/register", (req, res) => {
+    res.sendFile(node_path_1.default.join(__dirname, "../public", "register.html"));
+});
+app.get("/connexion", (req, res) => {
+    res.sendFile(node_path_1.default.join(__dirname, "../public", "connexion.html"));
 });
 app.get("/api/ping", (_req, res) => res.json({ ok: true, message: "Aucun bug à signaler !" }));
 app.listen(PORT, () => {

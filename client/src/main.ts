@@ -1,6 +1,19 @@
 import './style.css';
 const form = document.querySelector<HTMLFormElement>("#registerForm");
 const out = document.querySelector<HTMLPreElement>("#out");
+const linkConnexion = document.querySelector<HTMLAnchorElement>("#connexion");
+linkConnexion?.addEventListener("click",async(e)=>{
+  e.preventDefault();
+  const res = await fetch("/connexion",{
+    method:"GET",
+    
+  })
+  if (res.ok){
+    const pre = document.querySelector<HTMLPreElement>("#mess");
+    if (pre) pre.textContent = `La réponse est là`;
+    
+  }
+})
 console.log("main.ts chargé");
 
 fetch("/api/ping")
