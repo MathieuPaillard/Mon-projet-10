@@ -37,5 +37,36 @@ footer{
   height: 2rem;
 }
 main{
-  min-height: 30rem;
+   flex-direction: column;
+  
+  width: 100%;
+  max-width: 60rem;
+  margin: 0 auto;            /* <-- centre le bloc main dans la page */
+  display: flex;
+  justify-content: center;   /* centre la section dans le main */
+  align-items: center;
+}
+#sectionForm{
+  display: flex;
+ flex-direction: column;
+  padding: 0.2rem;
+  background-color: rgb(54, 54, 54);
+  align-items: center;
+  justify-content: center;
+}
+
+form{
+  padding: 0.5rem;
+  align-items: center;
+  
+  display: flex;
+  flex-direction: column;
+}
+.input{padding: 0.4rem;}
+.button{
+  margin-top: 0.5rem;
+}
+.titleForm{
+  margin-top: 0;
+  font-weight: bold;
 }

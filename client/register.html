@@ -2,49 +2,55 @@
 <html lang="en">
 
 <head>
-  <meta charset="UTF-8" />
-  <link rel="icon" type="image/svg+xml" href="/vite.svg" />
-  
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>client</title>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/svg+xml" href="/vite.svg" />
+
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>client</title>
 </head>
 
 <body>
 
-  <header>
-    <nav>
-      <ul>
+    <header>
+        <nav>
+            <ul>
+
+                <li><a id="connexion" href="/connexion.html">CONNEXION</a></li>
+                <li> <a id="home" href="/index.html">ACCEUIL</a></li>
+            </ul>
+        </nav>
+    </header>
+    <main>
+        <h1>Enregistrement</h1>
+        <pre id="mess"></pre>
         
-        <li><a id="connexion" href="/connexion">CONNEXION</a></li>
-        <li> <a id="home" href="/index">ACCEUIL</a></li>
-      </ul>
-    </nav>
-  </header>
-  <main>
-    <h1>Enregistrement</h1>
-  </main>
+
+    <section id="sectionForm">
+        
+        <form id="registerForm">
+            <p class="titleForm">Formulaire d'enregistrement</p>
+            <input class="input" name="name" placeholder="name" required />
+            <input class="input" name="firstname" placeholder="firstname" required />
+            <input class="input" name="email" type="email" placeholder="email" required />
+            <input class="input" name="password" type="password" placeholder="password" required />
+            <button id="buttonRegister" class="button" type="submit">Send</button>
+        </form>
+    </section>
+  
+
+    <pre id="out"></pre>
+    </main>
 
 
+    <footer class="site-footer">
+        <p>© 2026 Mon-projet-10 — Tous droits réservés</p>
+        <nav>
+            <a href="/mentions">Mentions légales</a>
+            <a href="/contact">Contact</a>
+        </nav>
+    </footer>
 
-  <form id="registerForm">
-    <input name="name" placeholder="name" required />
-    <input name="firstname" placeholder="firstname" required />
-    <input name="email" type="email" placeholder="email" required />
-    <input name="password" type="password" placeholder="password" required />
-    <button type="submit">Send</button>
-  </form>
-
-  <pre id="out"></pre>
-
-  <footer class="site-footer">
-    <p>© 2026 Mon-projet-10 — Tous droits réservés</p>
-    <nav>
-      <a href="/mentions">Mentions légales</a>
-      <a href="/contact">Contact</a>
-    </nav>
-  </footer>
-
-  <script type="module" src="/src/main.ts"></script>
+    <script type="module" src="/src/main.ts"></script>
 
 </body>
 

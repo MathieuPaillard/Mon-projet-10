@@ -1,19 +1,8 @@
 import './style.css';
 const form = document.querySelector<HTMLFormElement>("#registerForm");
 const out = document.querySelector<HTMLPreElement>("#out");
-const linkConnexion = document.querySelector<HTMLAnchorElement>("#connexion");
-linkConnexion?.addEventListener("click",async(e)=>{
-  e.preventDefault();
-  const res = await fetch("/connexion",{
-    method:"GET",
-    
-  })
-  if (res.ok){
-    const pre = document.querySelector<HTMLPreElement>("#mess");
-    if (pre) pre.textContent = `La réponse est là`;
-    
-  }
-})
+//const mess = document.querySelector<HTMLPreElement>("#mess");
+const buttonRegister = document.querySelector<HTMLButtonElement>("#buttonRegister");
 console.log("main.ts chargé");
 
 fetch("/api/ping")
@@ -40,6 +29,9 @@ form.addEventListener("submit", async (e) => {
     body: JSON.stringify(payload),
   });
 
-  const json = await res.json();
-  if (out) out.textContent = JSON.stringify(json, null, 2);
+ if(!res.ok){
+  const data = await res.json();
+  if (out) out.textContent = `${data.message}`
+  
+ }
 });
