@@ -7,8 +7,8 @@
 
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>client</title>
-  <script type="module" crossorigin src="/assets/style-CPu5V9nm.js"></script>
-  <script type="module" crossorigin src="/assets/main-Clg4dxmN.js"></script>
+  <script type="module" crossorigin src="/assets/connexion-D9M_dzoH.js"></script>
+  <link rel="modulepreload" crossorigin href="/assets/style-CPu5V9nm.js">
   <link rel="stylesheet" crossorigin href="/assets/style-CIlcZdRs.css">
 </head>
 
@@ -25,17 +25,17 @@
     <main>
         <h1>Connexion</h1>
 
+    <form id="connexionForm">Formulaire de connexion
+        <input name="email" type="email" placeholder="email" required />
+        <input name="password" type="password" placeholder="password" required />
+        <button id="buttonConnexion" type="submit">Send</button>
+    </form>
+
+    <pre id="out"></pre>
     </main>
 
 
 
-    <form id="connexionForm">Formulaire de connexion
-        <input name="email" type="email" placeholder="email" required />
-        <input name="password" type="password" placeholder="password" required />
-        <button type="submit">Send</button>
-    </form>
-
-    <pre id="out"></pre>
 
     <footer class="site-footer">
         <p>© 2026 Mon-projet-10 — Tous droits réservés</p>

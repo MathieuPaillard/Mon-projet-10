@@ -8,6 +8,8 @@ const node_path_1 = __importDefault(require("node:path"));
 const dotenv_1 = __importDefault(require("dotenv"));
 const pg_1 = require("pg");
 const bcrypt_1 = __importDefault(require("bcrypt"));
+const jsonwebtoken_1 = __importDefault(require("jsonwebtoken"));
+const cookie_parser_1 = __importDefault(require("cookie-parser"));
 // Charge .env depuis la racine server/
 dotenv_1.default.config({ path: node_path_1.default.resolve(__dirname, "..", ".env") });
 // connexion à la base de données
@@ -19,12 +21,56 @@ const pool = new pg_1.Pool({
     database: process.env.PGDATABASE,
 });
 const app = (0, express_1.default)();
-const PORT = Number(process.env.PORT) || 3003;
+const PORT = Number(process.env.PORT) || 3004;
+app.use((0, cookie_parser_1.default)());
 app.use(express_1.default.json());
 app.use(express_1.default.urlencoded({ extended: true }));
 // API test
 // Statique (front buildé par Vite)
 app.use(express_1.default.static(node_path_1.default.join(__dirname, "../public")));
+function env(name) {
+    const v = process.env[name];
+    if (!v)
+        throw new Error(`${name} manquant`);
+    return v;
+}
+function envNumber(name) {
+    const v = process.env[name];
+    if (!v)
+        throw new Error(`${name} manquant`);
+    const n = Number(v);
+    if (!Number.isFinite(n))
+        throw new Error(`${name} doit être un nombre`);
+    return n;
+}
+// MIDDLEWARE
+async function auth(req, res, next) {
+    const token = req.cookies?.token;
+    if (!token) {
+        console.log("Absence de cookie d'authorisation.");
+        return res.status(401).json({ success: false, message: "Accès non authorisé." });
+    }
+    try {
+        const secret = env("JWT_SECRET");
+        const decoded = jsonwebtoken_1.default.verify(token, secret);
+        req.user = decoded;
+        return next();
+    }
+    catch (error) {
+        console.log("Erreur lors de la vérification du token.");
+        console.log("Erreur : ", error);
+        return res.status(401).json({ success: false, message: "Erreur d'authentification." });
+    }
+}
+function requireAdmin(req, res, next) {
+    if (!req.user) {
+        return res.status(401).json({ success: false, message: "Non authentifié." });
+    }
+    if (req.user.role !== "admin") {
+        return res.status(403).json({ success: false, message: "Accès interdit." });
+    }
+    return next();
+}
 app.get("/index", (_req, res) => {
     res.sendFile(node_path_1.default.join(__dirname, "../public", "index.html"));
 });
@@ -33,6 +79,12 @@ app.get("/register", (req, res) => {
 });
 app.get("/connexion", (req, res) => {
     res.sendFile(node_path_1.default.join(__dirname, "../public", "connexion.html"));
+});
+app.get("/admin", auth, requireAdmin, (req, res) => {
+    res.sendFile(node_path_1.default.join(__dirname, "../public", "admin.html"));
+});
+app.get("/board", auth, (req, res) => {
+    res.sendFile(node_path_1.default.join(__dirname, "../public", "board.html"));
 });
 app.get("/api/ping", (_req, res) => res.json({ ok: true, message: "Aucun bug à signaler !" }));
 app.post("/api/register", async (req, res) => {
@@ -47,7 +99,7 @@ app.post("/api/register", async (req, res) => {
         const email_exist = await pool.query(`SELECT email from users WHERE email = $1`, [email]);
         if (email_exist.rows.length == 0) {
             // on crypt le mot de passe :
-            const password_hash = await bcrypt_1.default.hash(password, 15);
+            const password_hash = await bcrypt_1.default.hash(password, 18);
             console.log(password_hash);
             //On insert dans la base les données.
             const insert = await pool.query("INSERT INTO users (name , firstname, email, password_hash) VALUES($1,$2,$3,$4) RETURNING id,email,created_at", [name, firstname, email, password_hash]);
@@ -64,8 +116,66 @@ app.post("/api/register", async (req, res) => {
         return res.status(500).json({ success: false, message: "Problème de connexion à la base de données. Veuillez rééssayer ultérieurement." });
     }
 });
-app.post("/api/connexion", (req, res) => {
+app.post("/api/connexion", async (req, res) => {
     console.log("Tentative de connexion en cours");
+    const { email, password } = req.body;
+    if (!email || !password) {
+        return res.status(400).json({ success: false, message: "Champs manquants." });
+    }
+    try {
+        //Vérification email
+        const email_ok = await pool.query("SELECT id,email,password_hash,is_approved,role FROM users WHERE email=$1", [email]);
+        if (email_ok.rows.length > 0) {
+            const user = email_ok.rows[0];
+            const password_hash = user.password_hash;
+            console.log("Email trouvé dans la base de données.");
+            //Si email ok => vérification password
+            const pass_ok = await bcrypt_1.default.compare(password, password_hash);
+            if (pass_ok) {
+                // id est très probablement un number
+                const userId = user.id;
+                const userEmail = user.email;
+                const userIsApproved = user.is_approved;
+                const secret = process.env.JWT_SECRET;
+                if (!secret)
+                    return res.status(500).json({ success: false, message: "JWT_SECRET manquant." });
+                if (!userIsApproved)
+                    return res.status(401).json({ success: false, message: "Vous n'avez pas encore l'authorisation d'accès. L'admin doit vous l'accorder." });
+                const expiresIn = (process.env.JWT_EXPIRES_IN ?? "1h");
+                const token = jsonwebtoken_1.default.sign({ userId, userEmail, userIsApproved, role: user.role }, secret, { expiresIn });
+                const max_age = envNumber("COOKIE_MAX_AGE_MS");
+                res.cookie("token", token, {
+                    httpOnly: true,
+                    secure: process.env.NODE_ENV === "production",
+                    sameSite: "strict",
+                    maxAge: max_age
+                });
+                return res.status(200).json({ success: true, message: "Connexion résussie", role: user.role });
+                //Renvoie de la réponse 
+            }
+            else {
+                console.log("Mot de passe erroné.");
+                return res.status(401).json({ success: false, message: "Mot de passe erroné." });
+            }
+        }
+        else {
+            console.log("Email inexistant dans BDD.");
+            return res.status(404).json({ success: false, message: "L'adresse mail n'a pas été retrouvé dans la base de données." });
+        }
+    }
+    catch (error) {
+        console.log(`Erreur serveur. Connexion impossible à la base de données : ${error}`);
+        return res.status(500).json({ success: false, message: "Erreur SERVEUR. Connexion impossible à la base de données." });
+    }
+});
+app.post('/api/deconnexion', (req, res) => {
+    res.clearCookie("token", {
+        httpOnly: true,
+        sameSite: "strict",
+        secure: process.env.NODE_ENV === "production",
+        path: "/",
+    });
+    return res.status(200).json({ success: true, message: "Déconnecté" });
 });
 app.listen(PORT, () => {
     console.log(`Serveur: http://localhost:${PORT}`);

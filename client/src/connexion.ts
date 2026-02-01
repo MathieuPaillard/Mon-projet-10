@@ -24,6 +24,12 @@ form?.addEventListener('submit', async (e) => {
         if (res.ok) {
             const data = await res.json();
             if (out) out.textContent = `${data.message}`
+            if (data.role == 'admin') {
+                setTimeout(() => { window.location.replace('/admin') }, 2500)
+            } else {
+                setTimeout(() => { window.location.replace('/board') }, 2500)
+            }
+
         } else {
             const data = await res.json();
             if (out) out.textContent = `${data.message}`
