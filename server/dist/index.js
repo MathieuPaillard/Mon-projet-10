@@ -16,9 +16,9 @@ dotenv_1.default.config({ path: node_path_1.default.resolve(__dirname, "..", ".e
 const pool = new pg_1.Pool({
     host: process.env.PGHOST || 'localhost',
     port: Number(process.env.PGPORT) || 5433,
-    user: process.env.PGUSER,
-    password: process.env.PGPASSWORD,
-    database: process.env.PGDATABASE,
+    user: env("PGUSER"),
+    password: env("PGPASSWORD"),
+    database: env("PGDATABASE"),
 });
 const app = (0, express_1.default)();
 const PORT = Number(process.env.PORT) || 3004;
@@ -44,7 +44,7 @@ function envNumber(name) {
     return n;
 }
 // MIDDLEWARE
-async function auth(req, res, next) {
+function auth(req, res, next) {
     const token = req.cookies?.token;
     if (!token) {
         console.log("Absence de cookie d'authorisation.");
@@ -87,6 +87,15 @@ app.get("/board", auth, (req, res) => {
     res.sendFile(node_path_1.default.join(__dirname, "../public", "board.html"));
 });
 app.get("/api/ping", (_req, res) => res.json({ ok: true, message: "Aucun bug à signaler !" }));
+app.get("/api/users", auth, requireAdmin, async (req, res) => {
+    try {
+        const users = await pool.query("SELECT email,id,name,firstname,is_approved,role FROM users ORDER BY id ASC");
+        return res.status(200).json({ success: true, message: "Les données d'utilisateurs ont bien été récupérées.", data: users.rows });
+    }
+    catch (error) {
+        return res.status(500).json({ success: false, message: "Problème interne au serveur. Veuillez essayer ultérieurement." });
+    }
+});
 app.post("/api/register", async (req, res) => {
     const { name, firstname, email, password } = req.body;
     console.log(`Contenu du Body : ${name}`);
@@ -140,7 +149,7 @@ app.post("/api/connexion", async (req, res) => {
                 if (!secret)
                     return res.status(500).json({ success: false, message: "JWT_SECRET manquant." });
                 if (!userIsApproved)
-                    return res.status(401).json({ success: false, message: "Vous n'avez pas encore l'authorisation d'accès. L'admin doit vous l'accorder." });
+                    return res.status(403).json({ success: false, message: "Vous n'avez pas encore l'authorisation d'accès. L'admin doit vous l'accorder." });
                 const expiresIn = (process.env.JWT_EXPIRES_IN ?? "1h");
                 const token = jsonwebtoken_1.default.sign({ userId, userEmail, userIsApproved, role: user.role }, secret, { expiresIn });
                 const max_age = envNumber("COOKIE_MAX_AGE_MS");

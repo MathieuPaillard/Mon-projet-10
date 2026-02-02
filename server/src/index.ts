@@ -15,9 +15,9 @@ dotenv.config({ path: path.resolve(__dirname, "..", ".env") });
 const pool = new Pool({
     host: process.env.PGHOST || 'localhost',
     port: Number(process.env.PGPORT) || 5433,
-    user: process.env.PGUSER,
-    password: process.env.PGPASSWORD,
-    database: process.env.PGDATABASE,
+    user: env("PGUSER"),
+    password: env("PGPASSWORD"),
+    database: env("PGDATABASE"),
 })
 const app = express();
 const PORT = Number(process.env.PORT) || 3004;
@@ -44,7 +44,7 @@ function envNumber(name: string): number {
     return n;
 }
 // MIDDLEWARE
-async function auth(req: Request, res: Response, next: NextFunction) {
+function auth(req: Request, res: Response, next: NextFunction) {
     const token = req.cookies?.token;
     if (!token) {
         console.log("Absence de cookie d'authorisation.")
@@ -63,13 +63,13 @@ async function auth(req: Request, res: Response, next: NextFunction) {
 
 }
 function requireAdmin(req: Request, res: Response, next: NextFunction) {
-  if (!req.user) {
-    return res.status(401).json({ success: false, message: "Non authentifié." });
-  }
-  if (req.user.role !== "admin") {
-    return res.status(403).json({ success: false, message: "Accès interdit." });
-  }
-  return next();
+    if (!req.user) {
+        return res.status(401).json({ success: false, message: "Non authentifié." });
+    }
+    if (req.user.role !== "admin") {
+        return res.status(403).json({ success: false, message: "Accès interdit." });
+    }
+    return next();
 }
 
 
@@ -82,14 +82,24 @@ app.get("/register", (req, res) => {
 app.get("/connexion", (req, res) => {
     res.sendFile(path.join(__dirname, "../public", "connexion.html"))
 })
-app.get("/admin" ,auth,requireAdmin, (req,res)=>{
-res.sendFile(path.join(__dirname, "../public" , "admin.html"))
+app.get("/admin", auth, requireAdmin, (req, res) => {
+    res.sendFile(path.join(__dirname, "../public", "admin.html"))
 })
-app.get("/board" , auth , (req,res)=>{
-    res.sendFile(path.join(__dirname,"../public","board.html"))
+app.get("/board", auth, (req, res) => {
+    res.sendFile(path.join(__dirname, "../public", "board.html"))
 })
 
 app.get("/api/ping", (_req, res) => res.json({ ok: true, message: "Aucun bug à signaler !" }));
+
+app.get("/api/users", auth, requireAdmin, async (req, res) => {
+    try {
+        const users = await pool.query("SELECT email,id,name,firstname,is_approved,role FROM users ORDER BY id ASC")
+        return res.status(200).json({ success: true, message: "Les données d'utilisateurs ont bien été récupérées.", data: users.rows })
+    } catch (error) {
+        return res.status(500).json({ success: false, message: "Problème interne au serveur. Veuillez essayer ultérieurement." })
+    }
+
+})
 
 app.post("/api/register", async (req, res) => {
     const { name, firstname, email, password } = req.body;
@@ -149,7 +159,7 @@ app.post("/api/connexion", async (req, res) => {
                 const userIsApproved: boolean = user.is_approved;
                 const secret = process.env.JWT_SECRET;
                 if (!secret) return res.status(500).json({ success: false, message: "JWT_SECRET manquant." });
-                if (!userIsApproved) return res.status(401).json({ success: false, message: "Vous n'avez pas encore l'authorisation d'accès. L'admin doit vous l'accorder." })
+                if (!userIsApproved) return res.status(403).json({ success: false, message: "Vous n'avez pas encore l'authorisation d'accès. L'admin doit vous l'accorder." })
                 const expiresIn = (process.env.JWT_EXPIRES_IN ?? "1h") as SignOptions["expiresIn"];
 
                 const token = jwt.sign(
@@ -164,7 +174,7 @@ app.post("/api/connexion", async (req, res) => {
                     sameSite: "strict",
                     maxAge: max_age
                 });
-                return res.status(200).json({ success: true, message: "Connexion résussie" , role: user.role })
+                return res.status(200).json({ success: true, message: "Connexion résussie", role: user.role })
                 //Renvoie de la réponse 
             } else {
                 console.log("Mot de passe erroné.");
