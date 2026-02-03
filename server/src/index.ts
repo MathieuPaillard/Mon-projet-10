@@ -12,6 +12,7 @@ import { AuthTokenPayload } from "./auth/jwt.types";
 // Charge .env depuis la racine server/
 dotenv.config({ path: path.resolve(__dirname, "..", ".env") });
 // connexion à la base de données
+// users => id/email/password_hash/created_at/name/firstname/is_approved/role
 const pool = new Pool({
     host: process.env.PGHOST || 'localhost',
     port: Number(process.env.PGPORT) || 5433,
@@ -93,7 +94,7 @@ app.get("/api/ping", (_req, res) => res.json({ ok: true, message: "Aucun bug à 
 
 app.get("/api/users", auth, requireAdmin, async (req, res) => {
     try {
-        const users = await pool.query("SELECT email,id,name,firstname,is_approved,role FROM users ORDER BY id ASC")
+        const users = await pool.query("SELECT email,id,name,firstname,is_approved,role FROM users WHERE id <> 11 ORDER BY id DESC")
         return res.status(200).json({ success: true, message: "Les données d'utilisateurs ont bien été récupérées.", data: users.rows })
     } catch (error) {
         return res.status(500).json({ success: false, message: "Problème interne au serveur. Veuillez essayer ultérieurement." })
@@ -113,7 +114,7 @@ app.post("/api/register", async (req, res) => {
         const email_exist = await pool.query(`SELECT email from users WHERE email = $1`, [email]);
         if (email_exist.rows.length == 0) {
             // on crypt le mot de passe :
-            const password_hash = await bcrypt.hash(password, 18);
+            const password_hash = await bcrypt.hash(password, 15);
             console.log(password_hash);
             //On insert dans la base les données.
             const insert = await pool.query("INSERT INTO users (name , firstname, email, password_hash) VALUES($1,$2,$3,$4) RETURNING id,email,created_at", [name, firstname, email, password_hash])
@@ -200,6 +201,37 @@ app.post('/api/deconnexion', (req, res) => {
     });
     return res.status(200).json({ success: true, message: "Déconnecté" });
 })
+
+app.patch('/api/admin/set_approved/:id', auth, requireAdmin, async (req, res) => {
+    console.log("Requête en cours...")
+    const { is_approved, role } = req.body;
+    const id = Number(req.params.id);
+
+    if (!Number.isFinite(id)) return res.status(400).json({ success: false, message: "Le format ID n'est pas conforme pour valider la requête." });
+    if (typeof is_approved !== "undefined" && typeof is_approved !== "boolean") {
+        return res.status(400).json({ success: false, message: "Le format de l'approbation n'est pas valide." });
+    }
+    if (role && role !== "user" && role !== "admin") {
+        return res.status(400).json({ success: false, message: "Le format du rôle n'est pas valide. Il doit avoir pour valeur user ou admin." });
+    }
+ 
+    try {
+     
+        const r = await pool.query(`UPDATE users
+    SET is_approved = COALESCE($1 , is_approved),
+    role = COALESCE($2 , role) WHERE id = $3 RETURNING id,email,firstname,name,is_approved,role`,
+            [typeof is_approved === "boolean" ? is_approved : null, role ?? null, id])
+const data = r.rows[0];
+  
+
+        return res.status(200).json({ success: true, message: "Les modifications ont bien été réalisé dans la base de données.", data : data })
+    } catch (error) {
+        console.log(error);
+        return res.status(500).json({ success: false, message: "Erreur serveur." });
+    }
+
+})
+
 
 app.listen(PORT, () => {
     console.log(`Serveur: http://localhost:${PORT}`);

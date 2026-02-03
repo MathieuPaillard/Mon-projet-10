@@ -1,5 +1,6 @@
 import './style.css';
 const button_deconnexion = document.querySelector<HTMLButtonElement>("#deconnexion");
+const out = document.querySelector<HTMLPreElement>("#out");
 button_deconnexion?.addEventListener("click", async (e) => {
     e.preventDefault();
     await fetch("/api/deconnexion", {
@@ -9,6 +10,8 @@ button_deconnexion?.addEventListener("click", async (e) => {
     window.location.replace("/connexion");
 });
 (async () => {
+
+
     const div_cards = document.querySelector<HTMLDivElement>("#cards");
     const res = await fetch("/api/users", { method: "GET", credentials: 'include' });
     if (!res.ok) return window.location.replace("/connexion");
@@ -36,10 +39,37 @@ button_deconnexion?.addEventListener("click", async (e) => {
         email.className = "card-email";
         email.textContent = `${u.email}`;
 
-        const is_approved = document.createElement("toogle");
+        const is_approved = document.createElement("button");
         is_approved.className = "card-is_approved"
         is_approved.textContent = `Profile approuvé : ${u.is_approved}`;
         is_approved.classList.add(u.is_approved ? "is-true" : "is-false");
+
+        is_approved.addEventListener("click", async (e) => {
+            e.preventDefault();
+            const payload = {
+                is_approved: !u.is_approved
+            };
+            const res = await fetch(`/api/admin/set_approved/${u.id}`, {
+                method: "PATCH",
+                headers: { "Content-Type": "application/json" },
+                credentials: 'include',
+                body: JSON.stringify(payload)
+            })
+            const json = await res.json();
+            if (!res.ok) {
+                if (out) out.textContent = json.message;
+                return
+            }else{
+                is_approved.textContent = `Profile approuvé : ${json.data.is_approved}` ;
+                u.is_approved = json.data.is_approved;
+                is_approved.classList.remove("is-true", "is-false");
+                is_approved.classList.add(u.is_approved ? "is-true" : "is-false");
+                if (out) out.textContent = json.message;
+                return
+            }
+
+
+        })
 
         const role = document.createElement("div");
         role.className = "card-role";

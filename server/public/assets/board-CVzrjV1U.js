@@ -1,0 +1,1 @@
+import"./style-CL7nvpj_.js";const n=document.querySelector("#deconnexion");n?.addEventListener("click",async e=>{e.preventDefault(),await fetch("/api/deconnexion",{method:"POST",credentials:"same-origin"}),window.location.replace("/connexion")});
