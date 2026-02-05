@@ -59,8 +59,8 @@ button_deconnexion?.addEventListener("click", async (e) => {
             if (!res.ok) {
                 if (out) out.textContent = json.message;
                 return
-            }else{
-                is_approved.textContent = `Profile approuvé : ${json.data.is_approved}` ;
+            } else {
+                is_approved.textContent = `Profile approuvé : ${json.data.is_approved}`;
                 u.is_approved = json.data.is_approved;
                 is_approved.classList.remove("is-true", "is-false");
                 is_approved.classList.add(u.is_approved ? "is-true" : "is-false");
@@ -79,6 +79,25 @@ button_deconnexion?.addEventListener("click", async (e) => {
         const button_delete = document.createElement("button");
         button_delete.className = "card-button_delete";
         button_delete.textContent = `Suppression`;
+
+        button_delete.addEventListener("click", async (e) => {
+            e.preventDefault();
+            const res = await fetch(`/api/admin/delete/${u.id}`, {
+                method: "DELETE",
+                headers: { "Content-Type": "application/json" },
+                credentials: 'include'
+            })
+            if (!res.ok) {
+                const json = await res.json();
+                if (out) out.textContent = json.message;
+            } else {
+                const json = await res.json();
+                if (out) out.textContent = json.message;
+                alert(json.message);
+                card.remove();
+            }
+
+        })
 
         card.append(id, firstname, name, email, is_approved, role, button_delete);
         div_cards?.appendChild(card);

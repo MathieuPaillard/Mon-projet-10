@@ -4,7 +4,6 @@ import path, { join } from "node:path";
 import dotenv from "dotenv";
 import { Pool } from "pg";
 import bcrypt from "bcrypt";
-import { json } from "node:stream/consumers";
 import jwt, { SignOptions } from "jsonwebtoken";
 import cookieParser from "cookie-parser";
 import { AuthTokenPayload } from "./auth/jwt.types";
@@ -175,7 +174,7 @@ app.post("/api/connexion", async (req, res) => {
                     sameSite: "strict",
                     maxAge: max_age
                 });
-                return res.status(200).json({ success: true, message: "Connexion résussie", role: user.role })
+                return res.status(200).json({ success: true, message: "Connexion réussie", role: user.role })
                 //Renvoie de la réponse 
             } else {
                 console.log("Mot de passe erroné.");
@@ -214,22 +213,34 @@ app.patch('/api/admin/set_approved/:id', auth, requireAdmin, async (req, res) =>
     if (role && role !== "user" && role !== "admin") {
         return res.status(400).json({ success: false, message: "Le format du rôle n'est pas valide. Il doit avoir pour valeur user ou admin." });
     }
- 
+
     try {
-     
+
         const r = await pool.query(`UPDATE users
     SET is_approved = COALESCE($1 , is_approved),
     role = COALESCE($2 , role) WHERE id = $3 RETURNING id,email,firstname,name,is_approved,role`,
             [typeof is_approved === "boolean" ? is_approved : null, role ?? null, id])
-const data = r.rows[0];
-  
+        const data = r.rows[0];
 
-        return res.status(200).json({ success: true, message: "Les modifications ont bien été réalisé dans la base de données.", data : data })
+
+        return res.status(200).json({ success: true, message: "Les modifications ont bien été réalisé dans la base de données.", data: data })
     } catch (error) {
         console.log(error);
         return res.status(500).json({ success: false, message: "Erreur serveur." });
     }
 
+})
+
+app.delete('/api/admin/delete/:id', auth, requireAdmin, async (req, res) => {
+    const id = Number(req.params.id);
+    if (!Number.isInteger(id) || id <= 0) {
+        return res.status(400).json({ success: false, message: "L'identifiant n'est pas valide." });
+    }
+    const r = await pool.query("DELETE FROM users WHERE id = $1 RETURNING id, email", [id]);
+    if (r.rows.length === 0) {
+        return res.status(404).json({success: false , message : "Utilisateur introuvable."});
+    }
+    return res.status(200).json({success: true, message:`Suppression de l'utilisateur : ${r.rows[0].email} id : ${r.rows[0].id}`});
 })
 
 

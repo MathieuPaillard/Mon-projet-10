@@ -160,7 +160,7 @@ app.post("/api/connexion", async (req, res) => {
                     sameSite: "strict",
                     maxAge: max_age
                 });
-                return res.status(200).json({ success: true, message: "Connexion résussie", role: user.role });
+                return res.status(200).json({ success: true, message: "Connexion réussie", role: user.role });
                 //Renvoie de la réponse 
             }
             else {
@@ -210,6 +210,17 @@ app.patch('/api/admin/set_approved/:id', auth, requireAdmin, async (req, res) =>
         console.log(error);
         return res.status(500).json({ success: false, message: "Erreur serveur." });
     }
+});
+app.delete('/api/admin/delete/:id', auth, requireAdmin, async (req, res) => {
+    const id = Number(req.params.id);
+    if (!Number.isInteger(id) || id <= 0) {
+        return res.status(400).json({ success: false, message: "L'identifiant n'est pas valide." });
+    }
+    const r = await pool.query("DELETE FROM users WHERE id = $1 RETURNING id, email", [id]);
+    if (r.rows.length === 0) {
+        return res.status(404).json({ success: false, message: "Utilisateur introuvable." });
+    }
+    return res.status(200).json({ success: true, message: `Suppression de l'utilisateur : ${r.rows[0].email} id : ${r.rows[0].id}` });
 });
 app.listen(PORT, () => {
     console.log(`Serveur: http://localhost:${PORT}`);
