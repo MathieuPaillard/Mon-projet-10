@@ -21,6 +21,7 @@ form.addEventListener("submit", async (e) => {
     firstname: String(data.get("firstname") ?? ""),
     email: String(data.get("email") ?? ""),
     password: String(data.get("password") ?? ""),
+    phoneNumber: String(data.get("phoneNumber") ?? ""),
   };
   if (out) out.textContent = `Requête en cours.`
   const res = await fetch("/api/register", {

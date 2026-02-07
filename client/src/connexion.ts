@@ -23,6 +23,9 @@ form?.addEventListener('submit', async (e) => {
         });
         if (res.ok) {
             const data = await res.json();
+            localStorage.setItem("name",data.name);
+            localStorage.setItem("firstname",data.firstname);
+            localStorage.setItem("id",data.id);
             if (out) out.textContent = `${data.message}`
             if (data.role == 'admin') {
                 setTimeout(() => { window.location.replace('/admin') }, 2500)
